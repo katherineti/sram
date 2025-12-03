@@ -1,0 +1,1 @@
+This directory is for storing static image assets for the application.

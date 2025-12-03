@@ -1,0 +1,298 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the SRAM system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "cedula": {
+          "type": "string",
+          "description": "The user's identification number (cedula)."
+        },
+        "age": {
+          "type": "number",
+          "description": "The user's age."
+        },
+        "schoolId": {
+          "type": "string",
+          "description": "Reference to School. (Relationship: School 1:N User)"
+        },
+        "belt": {
+          "type": "string",
+          "description": "The user's karate belt level."
+        },
+        "ranking": {
+          "type": "number",
+          "description": "The user's ranking score."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role within the system (Admin, Master, Alumno, Representante).",
+          "enum": ["admin", "master", "alumno", "representante"]
+        },
+        "photoURL": {
+            "type": "string",
+            "description": "URL of the user's profile picture."
+        },
+        "representativeId": {
+          "type": "string",
+          "description": "Reference to Representative User. (Relationship: User 1:N User)"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "cedula",
+        "age",
+        "schoolId",
+        "belt",
+        "ranking",
+        "role"
+      ]
+    },
+    "School": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "School",
+      "type": "object",
+      "description": "Represents a karate school.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the school."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the school."
+        },
+        "address": {
+          "type": "string",
+          "description": "The address of the school."
+        },
+        "masterId": {
+          "type": "string",
+          "description": "Reference to Master user. (Relationship: User 1:N School)"
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "URL of the school's logo."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address",
+        "masterId"
+      ]
+    },
+    "Claim": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Claim",
+      "type": "object",
+      "description": "Represents a claim submitted by a representative.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the claim."
+        },
+        "representativeId": {
+          "type": "string",
+          "description": "Reference to Representative User. (Relationship: User 1:N Claim)"
+        },
+        "representativeName": {
+            "type": "string",
+            "description": "Name of the representative who created the claim."
+        },
+        "representedId": {
+            "type": "string",
+            "description": "ID of the student or school being represented."
+        },
+        "representedName": {
+            "type": "string",
+            "description": "Name of the student or school being represented."
+        },
+        "representedType": {
+            "type": "string",
+            "description": "The type of entity being represented.",
+            "enum": ["alumno", "escuela"]
+        },
+        "subject": {
+            "type": "string",
+            "description": "The subject or title of the claim."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the claim."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the claim (e.g., submitted, in progress, resolved).",
+          "enum": ["enviado", "en-proceso", "resuelto", "rechazado"]
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "The date and time the claim was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "representativeId",
+        "representativeName",
+        "representedId",
+        "representedName",
+        "representedType",
+        "subject",
+        "description",
+        "status",
+        "submissionDate"
+      ]
+    },
+    "Event": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Event",
+      "type": "object",
+      "description": "Represents a karate event, such as a competition, seminar, or exhibition.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the event."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the event."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the event."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date and time of the event.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "The location where the event will take place."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of event.",
+          "enum": ["competencia", "seminario", "exhibicion"]
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the event.",
+          "enum": ["programado", "en-curso", "finalizado", "cancelado"]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "date",
+        "location",
+        "type",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data. Path-based ownership ensures only the user and admins can access the data. Includes userId as parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/schools/{schoolId}",
+        "definition": {
+          "entityName": "School",
+          "schema": {
+            "$ref": "#/backend/entities/School"
+          },
+          "description": "Stores school data. Includes the masterId for authorization purposes and to avoid get() calls. Includes schoolId as parameter.",
+          "params": [
+            {
+              "name": "schoolId",
+              "description": "The unique identifier for the school."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/claims/{claimId}",
+        "definition": {
+          "entityName": "Claim",
+          "schema": {
+            "$ref": "#/backend/entities/Claim"
+          },
+          "description": "Stores claims data for a representative. Path-based ownership ensures only the representative who created the claim, the master of the school, and admins can access the data. Includes userId and claimId as parameters.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user (representative)."
+            },
+            {
+              "name": "claimId",
+              "description": "The unique identifier for the claim."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/events/{eventId}",
+        "definition": {
+          "entityName": "Event",
+          "schema": {
+            "$ref": "#/backend/entities/Event"
+          },
+          "description": "Stores event data. Publicly readable, but writable only by admins. Includes eventId as a parameter.",
+          "params": [
+            {
+              "name": "eventId",
+              "description": "The unique identifier for the event."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the SRAM application's requirements, focusing on security, scalability, and ease of debugging. It uses path-based ownership and denormalization to achieve Authorization Independence and support the required QAPs. The structure leverages Structural Segregation by placing data with similar access control needs into the same collections, and employs Access Modeling with standardized patterns such as path-based ownership for private data and the membership map model for collaborative data (though not explicitly used in this version). \n\nSpecifically, user data is stored in `/users/{userId}` to ensure each user's data is private and accessible only to themselves and admins. School data is stored in `/schools/{schoolId}`, allowing for easy retrieval and management of school information. Claims are stored under the representative's userId at `/users/{userId}/claims/{claimId}`. This design ensures that only the representative who created the claim, the master associated with the school, and the administrator can access the claim.\n\nTo achieve Authorization Independence, the `School` document includes the `masterId`, which allows rules to verify a user is the master of a school without needing to perform additional `get()` calls. The Claims subcollection inherits authorization context from its parent document and through the general role check collections. This removes the need for hierarchical authorization dependencies, enabling atomic operations and simplifying debugging. Furthermore, this structure supports listing claims securely (QAP) as the listing operation is constrained to the authenticated user's claims, ensuring that no claims from other representatives are exposed unless the user is an admin or the master of the school."
+  }
+}

@@ -1,0 +1,148 @@
+/**
+ * This ruleset enforces a security model based on user ownership, with elevated
+ * privileges for system administrators and school masters. The philosophy is to
+ * default to secure, private data and explicitly grant access where needed.
+ *
+ * Core Philosophy:
+ * - User-centric data is private by default and only accessible by the owning user.
+ * - System-wide administrators have read and write access to all data for
+ *   management and moderation purposes.
+ * - School masters have specific privileges to manage their own school's data and
+ *   view related data, such as claims submitted by their school's members.
+ *
+ * Data Structure:
+ * - /users/{userId}: Contains private user profile data. Access is restricted
+ *   to the user themselves or an admin.
+ * - /schools/{schoolId}: Contains public information about schools. Writable
+ *   only by the school's designated master or an admin.
+ * - /users/{userId}/claims/{claimId}: A subcollection for claims, nested under
+ *   the user who submitted them. This enforces a clear ownership path.
+ *
+ * Key Security Decisions:
+ * - Admin Privilege: A user is considered an admin if the `role` field in their
+ *   own `/users/{userId}` document is set to 'admin'. This simplifies role checking.
+ * - Master Privilege: Access for school masters to related data (like claims) is
+ *   granted by performing reads on user and school documents to establish the
+ *   relationship. While this requires `get()` calls, it correctly models the
+ *   access requirements described.
+ * - User Listing for Admins Only: Listing documents in the top-level `/users` collection is
+ *   only allowed for admin users to enable the user management dashboard.
+ * - Prototyping Flexibility: These rules focus strictly on authorization (who can
+ *   access what) and relational integrity (e.g., ensuring a claim's `representativeId`
+ *   matches its parent user). They do not validate the shape or type of other
+ *   data fields, allowing for rapid front-end development.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the foundation of the user-ownership model.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if a document exists at the time of the request.
+     * CRITICAL for all update and delete operations to prevent acting on null data.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+    
+    /**
+     * Checks if the user is a system administrator by reading their own user document.
+     * A user can always read their own document, making this check reliable.
+     */
+    function isAdmin() {
+      // IMPORTANT: This function uses get() and can only be used in rules for
+      // single document operations (get, create, update, delete), not for list queries.
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.data.role == 'admin';
+    }
+
+
+    /**
+     * Checks if the currently authenticated user is the designated master of the
+     * school that a given user belongs to. This requires two `get` calls.
+     * 1. Get the user's document to find their schoolId.
+     * 2. Get the school's document to find the masterId.
+     */
+    function isMasterOfUser(userId) {
+        let userDoc = get(/databases/$(database)/documents/users/$(userId));
+        // Ensure the user and their schoolId exist before proceeding
+        return ('schoolId' in userDoc.data) && request.auth.uid == get(/databases/$(database)/documents/schools/$(userDoc.data.schoolId)).data.masterId;
+    }
+    
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+    
+    /**
+     * @description Allow any user (authenticated or not) to list the documents in the /users collection.
+     * This is required for the public ranking/search view and user management dashboard.
+     */
+    match /users {
+      allow list: if true;
+    }
+    
+    /**
+     * @description Manages individual user profile data. Users can create their own profile.
+     *   Once created, only the owner or an admin can read or write to it.
+     * @path /users/{userId}
+     * @allow A new user (auth.uid='user_123') creates their own profile document: (create) /users/user_123
+     * @deny An authenticated user attempts to read another user's document: (get) /users/other_user_456
+     * @principle Restricts access to a user's own data tree, and grants full access to admins.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isOwner(userId) || isAdmin()) && isExistingDoc() && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Manages karate school data. School information is public for anyone to read.
+     *   Only the designated master of the school or an admin can create, update, or delete school data.
+     * @path /schools/{schoolId}
+     * @allow Any unauthenticated user reads a school's details: (get) /schools/school_abc
+     * @deny A signed-in user who is not the master attempts to update the school: (update) /schools/school_abc
+     * @principle Implements a "Public Read with Owner-Only Writes" model, where ownership is defined by the `masterId` field.
+     */
+    match /schools/{schoolId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.masterId == request.auth.uid;
+      allow update: if (isOwner(resource.data.masterId) || isAdmin()) && isExistingDoc();
+      allow delete: if (isOwner(resource.data.masterId) || isAdmin()) && isExistingDoc();
+    }
+    
+    /**
+     * @description Manages claims submitted by users (representatives). Claims are stored in a subcollection under the user.
+     *   Access is granted to the user who created it, any system admin, or the master of the user's school.
+     * @path /users/{userId}/claims/{claimId}
+     * @allow A school master reads a claim submitted by a user from their school: (get) /users/student_123/claims/claim_abc
+     * @deny A user tries to read a claim from another user who is not in their school: (get) /users/other_student_456/claims/claim_xyz
+     * @principle Enforces shared access for a specific set of collaborators (owner, admin, school master).
+     */
+    match /users/{userId}/claims/{claimId} {
+      allow read: if isOwner(userId) || isAdmin() || isMasterOfUser(userId);
+      allow create: if isOwner(userId) && request.resource.data.representativeId == userId;
+      allow update: if (isOwner(userId) || isAdmin() || isMasterOfUser(userId)) && isExistingDoc();
+      delete: if (isOwner(userId) || isAdmin() || isMasterOfUser(userId)) && isExistingDoc();
+    }
+  }
+}

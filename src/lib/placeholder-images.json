@@ -1,0 +1,16 @@
+{
+  "placeholderImages": [
+    {
+      "id": "karate-event",
+      "description": "Karate students during a training session.",
+      "imageUrl": "https://images.unsplash.com/photo-1560631820-ecf9d56ba39e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxrYXJhdGUlMjBhY3Rpb258ZW58MHx8fHwxNzY0MTAzMTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "karate action"
+    },
+    {
+      "id": "karate-competition",
+      "description": "Two karatekas competing in a match.",
+      "imageUrl": "https://images.unsplash.com/photo-1686729917714-ced212e45227?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxrYXJhdGUlMjBmaWdodHxlbnwwfHx8fDE3NjQxMDMxNDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "karate fight"
+    }
+  ]
+}
