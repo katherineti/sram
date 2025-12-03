@@ -22,7 +22,7 @@ export default function TopWinners() {
   const topThreeAthletes = useMemo(() => {
     // Simulación de que los atletas "quemados" son los ganadores
     const winners = [
-        { ...mockAthletes.find(a => a.apellidos === 'Méndez'), id: 1, nombres: 'Sofía', apellidos: 'Méndez' },
+        { ...mockAthletes.find(a => a.apellidos === 'Méndez'), id: 1, nombres: 'Carlos', apellidos: 'Méndez' },
         { ...mockAthletes.find(a => a.apellidos === 'Ramírez'), id: 2, nombres: 'Juan', apellidos: 'Ramírez' },
         { ...mockAthletes.find(a => a.apellidos === 'Rojas'), id: 3, nombres: 'Gabriela', apellidos: 'Rojas' },
     ];
